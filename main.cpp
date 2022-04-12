@@ -97,6 +97,11 @@ public:
                     cout << "The " << ChessPiece::ToStr(board[to.x][to.y]->Type()) << " was taken by " << ChessPiece::ToStr(piece->Type()) << ".\n";
                 }
             }
+            else {
+                if (isCheck(true)) {
+                    cout << "White king is under attack.\n";
+                }
+            }
             board[piece->getPosition().x][piece->getPosition().y] = nullptr;
             board[to.x][to.y] = piece;
             piece->setPosition(to.x, to.y);
@@ -122,26 +127,38 @@ public:
     }
 
     bool isCheck(bool white) {
-        for (int i = 0; i < getRows(); i++) {
-            for (int j = 0; j < getCols(); j++) {
-                if (board[i][j]->Type() == ChessPiece::KING && board[i][j]->White() == white) {
-
+        Position kingPos(-1, -1);
+        for (int x = 0; x < getRows(); x++) {
+            for (int y = 0; y < getCols(); y++) {
+                if (board[x][y]) {
+                    if (board[x][y]->Type() == ChessPiece::KING && board[x][y]->White() == white) {
+                        kingPos.x = x;
+                        kingPos.y = y;
+                    }
                 }
             }
         }
-        for (int i = 0; i < getRows(); i++) {
-            for (int j = 0; j < getCols(); j++) {
-                if (board[i][j]->Type() != ChessPiece::KING && board[i][j]->White() != white) {
-//                    if (board[i][j].)
+        if (kingPos.x != -1 && kingPos.y != -1) {
+            for (int x = 0; x < getRows(); x++) {
+                for (int y = 0; y < getCols(); y++) {
+                    if (board[x][y]) {
+                        if (board[x][y]->Type() != ChessPiece::KING && board[x][y]->White() != white) {
+                            if (board[x][y]->CanMove(kingPos, this)) {
+                                cout << "Check by " << ChessPiece::ToStr(board[x][y]->Type()) << ".\n";
+                                return true;
+                            }
+                        }
+                    }
                 }
             }
         }
+        return false;
     }
 
     void Draw() {
         cout << '\n';
         for (int i = 0; i < getCols(); i++) {
-            cout << ' ' << i + 1 << " ";
+            cout << ' ' << i + 1 << "  ";
         }
         cout << '\n';
         for (int i = 0; i < getCols(); i++) {
@@ -178,7 +195,10 @@ public:
         bool left_right = to.y - position.y == 0;
         bool up_down = to.x - position.x == 0;
         if (diagonal || left_right || up_down) {
-            //while
+            bool pieceBetweenKgQn = false;
+            while (!pieceBetweenKgQn) {
+                
+            }
             return true;
         }
         return false;
@@ -274,14 +294,13 @@ int main() {
     ChessBoard board(4, 4);
     auto queen = std::make_shared <Queen>(Position(3, 1), true);
     board.AddPiece(queen);
-    board.Draw();
     board.Move(queen, Position(1, 1));
     auto king = std::make_shared <King>(Position(3, 1), true);
     board.AddPiece(king);
     board.Draw();
     board.Move(king, Position(2,0));
     board.Draw();
-    board.Move(queen, Position(2, 0));
+    board.Move(queen, Position(2 , 1));
     board.Draw();
     return 0;
 }
