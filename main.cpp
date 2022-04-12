@@ -97,14 +97,17 @@ public:
                     cout << "The " << ChessPiece::ToStr(board[to.x][to.y]->Type()) << " was taken by " << ChessPiece::ToStr(piece->Type()) << ".\n";
                 }
             }
-            else {
-                if (isCheck(true)) {
-                    cout << "White king is under attack.\n";
-                }
-            }
+//            else {
+//                if (isCheck(piece->White())) {
+//                    cout << "White king is under attack.\n";
+//                }
+//            }
             board[piece->getPosition().x][piece->getPosition().y] = nullptr;
             board[to.x][to.y] = piece;
             piece->setPosition(to.x, to.y);
+            if (isCheck(piece->White())) {
+                cout << "White king is under attack.\n";
+            }
             return true;
         } else {
             cout << ChessPiece::ToStr(piece->Type()) << " can't move like this.\n";
@@ -131,7 +134,7 @@ public:
         for (int x = 0; x < getRows(); x++) {
             for (int y = 0; y < getCols(); y++) {
                 if (board[x][y]) {
-                    if (board[x][y]->Type() == ChessPiece::KING && board[x][y]->White() == white) {
+                    if (board[x][y]->Type() == ChessPiece::KING && board[x][y]->White() != white) {
                         kingPos.x = x;
                         kingPos.y = y;
                     }
@@ -142,9 +145,15 @@ public:
             for (int x = 0; x < getRows(); x++) {
                 for (int y = 0; y < getCols(); y++) {
                     if (board[x][y]) {
-                        if (board[x][y]->Type() != ChessPiece::KING && board[x][y]->White() != white) {
+                        if (board[x][y]->Type() != ChessPiece::KING && board[x][y]->White() != board[kingPos.x][kingPos.y]->White()) { // != white as parameter
                             if (board[x][y]->CanMove(kingPos, this)) {
-                                cout << "Check by " << ChessPiece::ToStr(board[x][y]->Type()) << ".\n";
+                                cout << "Check by ";
+                                if (board[x][y]->White()) {
+                                    cout << "white ";
+                                } else {
+                                    cout << "black ";
+                                }
+                                cout << ChessPiece::ToStr(board[x][y]->Type()) << ".\n";
                                 return true;
                             }
                         }
@@ -170,7 +179,9 @@ public:
                 if (Piece({i, j})) {
                     cout << '|';
                     if (Piece({i, j})->White()) {
-                        cout << '.';
+                        cout << '+';
+                    } else {
+                        cout << '-';
                     }
                     cout << ChessPiece::CharRepresentation(board[i][j]->Type());
                 } else {
@@ -196,9 +207,9 @@ public:
         bool up_down = to.x - position.x == 0;
         if (diagonal || left_right || up_down) {
             bool pieceBetweenKgQn = false;
-            while (!pieceBetweenKgQn) {
-                
-            }
+//            while (!pieceBetweenKgQn) {
+//
+//            }
             return true;
         }
         return false;
@@ -300,7 +311,14 @@ int main() {
     board.Draw();
     board.Move(king, Position(2,0));
     board.Draw();
-    board.Move(queen, Position(2 , 1));
+    auto BlackQueen = std::make_shared<Queen>(Position(1, 2), false);
+    board.AddPiece(BlackQueen);
+
+    board.Move(BlackQueen, Position(2 , 1));
+    board.Draw();
+    auto bishop = std::make_shared<Bishop>(Position(1, 3), false);
+    board.AddPiece(bishop);
+    board.Move(bishop, Position(0, 2));
     board.Draw();
     return 0;
 }
