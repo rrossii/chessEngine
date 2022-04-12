@@ -11,6 +11,7 @@ struct Position {
     Position(int x, int y) : x(x), y(y) {}
 };
 
+class ChessBoard;
 class ChessPiece {
 public:
     ChessPiece(Position pos, bool white) : position(pos), white(white) {};
@@ -45,10 +46,7 @@ public:
     }
 
     virtual PieceType Type() = 0;
-    virtual bool CanMove(Position to) = 0;
-    virtual bool CanTake(Position to) {
-        return CanMove(to);
-    };
+    virtual bool CanMove(Position to, ChessBoard *board) = 0;
     Position getPosition() {
         return position;
     }
@@ -90,7 +88,15 @@ public:
         return to.x >= 0 && to.x < getRows() && to.y >= 0 && to.y < getCols();
     }
     bool Move(ChessPiecePtr piece, Position to) {
-        if (isOnBoard(to) && piece->CanMove(to) && !board[to.x][to.y]) {
+        if (isOnBoard(to) && piece->CanMove(to, this)) {
+            if (board[to.x][to.y]) {
+                if (board[to.x][to.y]->White() == piece->White()) {
+                    cout << "Can't take friendly piece.\n";
+                    return false;
+                } else {
+                    cout << "The " << ChessPiece::ToStr(board[to.x][to.y]->Type()) << " was taken by " << ChessPiece::ToStr(piece->Type()) << ".\n";
+                }
+            }
             board[piece->getPosition().x][piece->getPosition().y] = nullptr;
             board[to.x][to.y] = piece;
             piece->setPosition(to.x, to.y);
@@ -102,18 +108,6 @@ public:
     }
     ChessPiecePtr Piece(Position pos) {
         return board[pos.x][pos.y];
-    }
-    bool Kill(ChessPiecePtr pieceKiller, ChessPiecePtr pieceVictim) {
-        if (isOnBoard(to) && pieceKiller->CanTake(to) && board[to.x][to.y] != nullptr && pieceVictim->Type() != ChessPiece::KING) {
-            board[pieceKiller->getPosition().x][pieceKiller->getPosition().y] = nullptr;
-            board[to.x][to.y] = pieceKiller;
-            pieceVictim = nullptr;
-            pieceKiller->setPosition(to.x, to.y);
-            return true;
-        } else {
-            cout << ChessPiece::ToStr(pieceKiller->Type()) << " can't kill like this.\n";
-            return false;
-        }
     }
 
     int getRows() {
@@ -127,6 +121,22 @@ public:
         return piece->White();
     }
 
+    bool isCheck(bool white) {
+        for (int i = 0; i < getRows(); i++) {
+            for (int j = 0; j < getCols(); j++) {
+                if (board[i][j]->Type() == ChessPiece::KING && board[i][j]->White() == white) {
+
+                }
+            }
+        }
+        for (int i = 0; i < getRows(); i++) {
+            for (int j = 0; j < getCols(); j++) {
+                if (board[i][j]->Type() != ChessPiece::KING && board[i][j]->White() != white) {
+//                    if (board[i][j].)
+                }
+            }
+        }
+    }
 
     void Draw() {
         cout << '\n';
@@ -135,7 +145,7 @@ public:
         }
         cout << '\n';
         for (int i = 0; i < getCols(); i++) {
-            cout << " __";
+            cout << " ___";
         }
         cout << '\n';
         for (int i = 0; i < getRows(); i++) {
@@ -147,14 +157,14 @@ public:
                     }
                     cout << ChessPiece::CharRepresentation(board[i][j]->Type());
                 } else {
-                    cout << "|__";
+                    cout << "|___";
                 }
             }
             cout << '|' << ' ' << i + 1 << '\n';
         }
     }
 private:
-    vector<vector<ChessPiecePtr>> board;
+    vector <vector<ChessPiecePtr>> board;
 };
 
 class Queen : public ChessPiece {
@@ -163,11 +173,12 @@ public:
     PieceType Type() override {
         return QUEEN;
     }
-    bool CanMove(Position to) override {
+    bool CanMove(Position to, ChessBoard *board) override {
         bool diagonal = abs(to.x - position.x) == abs(to.y - position.y);
         bool left_right = to.y - position.y == 0;
         bool up_down = to.x - position.x == 0;
         if (diagonal || left_right || up_down) {
+            //while
             return true;
         }
         return false;
@@ -180,7 +191,7 @@ public:
     PieceType Type() override {
         return KING;
     }
-    bool CanMove(Position to) override {
+    bool CanMove(Position to,  ChessBoard *board) override {
         int p_x = abs(to.x - position.x);
         int p_y = abs(to.y - position.y);
         bool diagonal = (p_x == p_y) && (p_x == 1) && (p_y == 1);
@@ -201,7 +212,7 @@ public:
     PieceType Type() override {
         return BISHOP;
     }
-    bool CanMove(Position to) override {
+    bool CanMove(Position to,  ChessBoard *board) override {
         bool diagonal = abs(to.x - position.x) == abs(to.y - position.y);
         if (diagonal) {
             return true;
@@ -215,7 +226,7 @@ class Knight : public ChessPiece {
     PieceType Type() override {
         return KNIGHT;
     }
-    bool CanMove(Position to) override {
+    bool CanMove(Position to, ChessBoard *board) override {
         int p_x = abs(to.x - position.x);
         int p_y = abs(to.y - position.y);
         bool first_move = p_x == 1 && p_y == 2;
@@ -233,7 +244,7 @@ public:
     PieceType Type() override {
         return PAWN;
     }
-    bool CanMove(Position to) override {
+    bool CanMove(Position to,  ChessBoard *board) override {
         int p_x = abs(to.x - position.x);
         int p_y = abs(to.y - position.y);
         if (isFirstMove) {
@@ -247,14 +258,14 @@ public:
         }
         return false;
     }
-    bool CanTake(Position to) override {
-        int p_x = to.x - position.x;
-        int p_y = to.y - position.y;
-        if (p_x == 1 && p_y == 1) {
-            return true;
-        }
-        return false;
-    }
+//    bool CanTake(Position to) override {
+//        int p_x = to.x - position.x;
+//        int p_y = to.y - position.y;
+//        if (p_x == 1 && p_y == 1) {
+//            return true;
+//        }
+//        return false;
+//    }
 private:
     bool isFirstMove = true;
 };
@@ -271,9 +282,6 @@ int main() {
     board.Move(king, Position(2,0));
     board.Draw();
     board.Move(queen, Position(2, 0));
-    board.Draw();
-    board.Kill(queen, king, Position(2, 0));
-    board.Kill(king, queen, Position(1, 1));
     board.Draw();
     return 0;
 }
