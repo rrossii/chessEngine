@@ -1,0 +1,147 @@
+
+
+
+#include <iostream>
+#include <utility>
+#include <cassert>
+#include <memory>
+#include <vector>
+
+using namespace std;
+
+struct Position {
+    int x;
+    int y;
+    Position(int x, int y) : x(x), y(y) {}
+};
+
+class ChessPiece {
+public:
+    ChessPiece(Position pos) : position(pos) {};
+    enum PieceType {
+        QUEEN,
+        KING,
+        BISHOP,
+        KNIGHT,
+        ROOK,
+        PAWN
+    };
+#define TO_STR(x) case x: return #x;
+    static string ToStr(PieceType type) {
+        switch (type) {
+            TO_STR(QUEEN)
+            TO_STR(KING)
+            TO_STR(BISHOP)
+            TO_STR(KNIGHT)
+            TO_STR(ROOK)
+            TO_STR(PAWN)
+        }
+    }
+
+    virtual PieceType Type() = 0;
+    virtual bool CanMove(Position to) = 0;
+    Position getPosition() {
+        return position;
+    }
+protected:
+    bool white = false;
+    Position position;
+};
+
+class Pawn : public ChessPiece {
+private:
+    bool isFirstMove = false;
+public:
+    Pawn(Position pos) : ChessPiece(pos) {};
+};
+
+using ChessPiecePtr = shared_ptr<ChessPiece>;
+
+class ChessBoard {
+public:
+    ChessBoard(int rows, int cols) {
+        board = vector<vector<ChessPiecePtr>>(rows, vector <ChessPiecePtr>(cols, nullptr));
+    }
+
+    bool AddPiece(ChessPiecePtr piece) {
+        auto pos = piece->getPosition();
+        if (isOnBoard(pos)) {
+            if (!Piece(pos)) {
+                board[pos.x][pos.y] = piece;
+                return true;
+            }
+        } else {
+            cout << "Can't put a chess piece on cell with negative coordinates.\n";
+            return false;
+        }
+    };
+
+    bool isOnBoard(Position to) {
+        return to.x >= 0 && to.x < getRows() && to.y >= 0 && to.y < getCols();
+    }
+    bool Move(ChessPiecePtr piece, Position to) {
+        if (isOnBoard(to) && piece->CanMove(to)) {
+            board[piece->getPosition().x][piece->getPosition().y] = nullptr;
+            board[to.x][to.y] = piece;
+            return true;
+        } else {
+            cout << ChessPiece::ToStr(piece->Type()) << " can't move like this.\n";
+            return false;
+        }
+    }
+    ChessPiecePtr Piece(Position pos) {
+        return board[pos.x][pos.y];
+    }
+
+    int getRows() {
+        return board.size();
+    }
+    int getCols() {
+        return board.front().size();
+    }
+
+    void Draw() {
+        cout << '\n';
+        for (int i = 0; i < getRows(); i++) {
+            for (int j = 0; j < getCols(); j++) {
+                if (Piece({i, j})) {
+                    cout << "Q";
+                } else {
+                    cout << "o";
+                }
+            }
+            cout << '\n';
+        }
+    }
+private:
+    vector<vector<ChessPiecePtr>> board;
+};
+
+class Queen : public ChessPiece {
+public:
+    Queen(Position pos) : ChessPiece(pos) {};
+    bool CanMove(Position to) override {
+        bool diagonal = abs(to.x - position.x) == abs(to.y - position.y);
+        bool left_right = to.y - position.y == 0;
+        bool up_down = to.x - position.x == 0;
+        if (diagonal || left_right || up_down) {
+            return true;
+        }
+        return false;
+    }
+
+    PieceType Type() override {
+        return QUEEN;
+    }
+};
+
+int main() {
+    ChessBoard board(4, 4);
+    board.Draw();
+    auto queen = std::make_shared <Queen>(Position(3, 0));
+    board.AddPiece(queen);
+    board.Draw();
+    board.Move(queen, Position(1, 1));
+    board.Draw();
+    return 0;
+}
