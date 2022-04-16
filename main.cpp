@@ -97,16 +97,12 @@ public:
                     cout << "The " << ChessPiece::ToStr(board[to.x][to.y]->Type()) << " was taken by " << ChessPiece::ToStr(piece->Type()) << ".\n";
                 }
             }
-//            else {
-//                if (isCheck(piece->White())) {
-//                    cout << "White king is under attack.\n";
-//                }
-//            }
             board[piece->getPosition().x][piece->getPosition().y] = nullptr;
             board[to.x][to.y] = piece;
             piece->setPosition(to.x, to.y);
-            if (isCheck(piece->White())) {
+           if (isCheck(piece->White())) {
                 cout << "White king is under attack.\n";
+                // todo: дописати
             }
             return true;
         } else {
@@ -146,13 +142,9 @@ public:
                 for (int y = 0; y < getCols(); y++) {
                     if (board[x][y]) {
                         if (board[x][y]->Type() != ChessPiece::KING && board[x][y]->White() != board[kingPos.x][kingPos.y]->White()) { // != white as parameter
-                            if (board[x][y]->CanMove(kingPos, this)) {
-                                cout << "Check by ";
-                                if (board[x][y]->White()) {
-                                    cout << "white ";
-                                } else {
-                                    cout << "black ";
-                                }
+                            if (board[x][y]->CanMove(kingPos, this) && IsNothingBetween(Position(x, y), kingPos)) {
+                                cout << "\nCheck by ";
+                                cout << (board[x][y]->White() ? "white " : "black ");
                                 cout << ChessPiece::ToStr(board[x][y]->Type()) << ".\n";
                                 return true;
                             }
@@ -162,6 +154,23 @@ public:
             }
         }
         return false;
+    }
+
+    bool IsNothingBetween(Position from, Position to) {
+        ChessPiecePtr piece = board[from.x][from.y];
+        assert(piece->CanMove(to, this));
+        if (piece->Type() == ChessPiece::KING || piece->Type() == ChessPiece::PAWN || piece->Type() == ChessPiece::KNIGHT) {
+            return true;
+        }
+
+        int dist = max(abs(to.x - from.x), abs(to.y - from.y));
+        Position shift((from.x - to.x) / dist, (from.y - to.y) / dist);
+
+        for (int xs = from.x + shift.x, ys = from.y + shift.y; xs < to.x || ys < to.y; xs += shift.x, ys += shift.y) {
+            if (board[xs][ys])
+                return false;
+        }
+        return true;
     }
 
     void Draw() {
@@ -190,135 +199,35 @@ public:
             }
             cout << '|' << ' ' << i + 1 << '\n';
         }
+        cout << "======================================================\n";
     }
 private:
     vector <vector<ChessPiecePtr>> board;
 };
 
-class Queen : public ChessPiece {
-public:
-    Queen(Position pos, bool white) : ChessPiece(pos, white) {};
-    PieceType Type() override {
-        return QUEEN;
-    }
-    bool CanMove(Position to, ChessBoard *board) override {
-        bool diagonal = abs(to.x - position.x) == abs(to.y - position.y);
-        bool left_right = to.y - position.y == 0;
-        bool up_down = to.x - position.x == 0;
-        if (diagonal || left_right || up_down) {
-            bool pieceBetweenKgQn = false;
-//            while (!pieceBetweenKgQn) {
-//
-//            }
-            return true;
-        }
-        return false;
-    }
-};
-
-class King : public ChessPiece {
-public:
-    King(Position pos, bool white) : ChessPiece(pos, white) {};
-    PieceType Type() override {
-        return KING;
-    }
-    bool CanMove(Position to,  ChessBoard *board) override {
-        int p_x = abs(to.x - position.x);
-        int p_y = abs(to.y - position.y);
-        bool diagonal = (p_x == p_y) && (p_x == 1) && (p_y == 1);
-        bool left_right = (p_y == 0) && (p_x == 1);
-        bool up_down = (p_x == 0) && (p_y == 1);
-        if (diagonal || left_right || up_down) {
-            return true;
-        }
-        return false;
-    }
-private:
-    bool hadCastle = false;
-};
-
-class Bishop : public ChessPiece {
-public:
-    Bishop(Position pos, bool white) : ChessPiece(pos, white) {};
-    PieceType Type() override {
-        return BISHOP;
-    }
-    bool CanMove(Position to,  ChessBoard *board) override {
-        bool diagonal = abs(to.x - position.x) == abs(to.y - position.y);
-        if (diagonal) {
-            return true;
-        }
-        return false;
-    }
-};
-
-class Knight : public ChessPiece {
-    Knight(Position pos, bool white) : ChessPiece(pos, white) {};
-    PieceType Type() override {
-        return KNIGHT;
-    }
-    bool CanMove(Position to, ChessBoard *board) override {
-        int p_x = abs(to.x - position.x);
-        int p_y = abs(to.y - position.y);
-        bool first_move = p_x == 1 && p_y == 2;
-        bool second_move = p_x == 2 && p_y == 1;
-        if (first_move || second_move) {
-            return true;
-        }
-        return false;
-    } //подив чи працює
-};
-
-class Pawn : public ChessPiece {
-public:
-    Pawn(Position pos, bool white, bool isFirstMove) : ChessPiece(pos, white), isFirstMove(isFirstMove) {};
-    PieceType Type() override {
-        return PAWN;
-    }
-    bool CanMove(Position to,  ChessBoard *board) override {
-        int p_x = abs(to.x - position.x);
-        int p_y = abs(to.y - position.y);
-        if (isFirstMove) {
-            if ((p_y == 2 || p_y == 1) && (p_x == 0)) {
-                return true;
-            }
-        } else {
-            if (p_y == 1 && p_x == 0) {
-                return true;
-            }
-        }
-        return false;
-    }
-//    bool CanTake(Position to) override {
-//        int p_x = to.x - position.x;
-//        int p_y = to.y - position.y;
-//        if (p_x == 1 && p_y == 1) {
-//            return true;
-//        }
-//        return false;
-//    }
-private:
-    bool isFirstMove = true;
-};
-
 int main() {
     ChessBoard board(4, 4);
-    auto queen = std::make_shared <Queen>(Position(3, 1), true);
+    auto queen = std::make_shared <Queen>(Position(2, 0), true);
     board.AddPiece(queen);
-    board.Move(queen, Position(1, 1));
-    auto king = std::make_shared <King>(Position(3, 1), true);
+    board.Draw();
+    board.Move(queen, Position(0, 0));
+    board.Draw();
+    auto king = std::make_shared <King>(Position(2, 0), true);
     board.AddPiece(king);
     board.Draw();
-    board.Move(king, Position(2,0));
-    board.Draw();
-    auto BlackQueen = std::make_shared<Queen>(Position(1, 2), false);
+
+    auto BlackQueen = std::make_shared<Queen>(Position(0, 1), false);
     board.AddPiece(BlackQueen);
 
-    board.Move(BlackQueen, Position(2 , 1));
+    board.Move(BlackQueen, Position(0, 3));
     board.Draw();
     auto bishop = std::make_shared<Bishop>(Position(1, 3), false);
     board.AddPiece(bishop);
     board.Move(bishop, Position(0, 2));
     board.Draw();
+    board.Move(bishop, Position(0, 2));
+    board.Draw();
     return 0;
 }
+
+
