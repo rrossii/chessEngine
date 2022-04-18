@@ -63,6 +63,110 @@ protected:
     Position position;
 };
 
+
+class Queen : public ChessPiece {
+public:
+    Queen(Position pos, bool white) : ChessPiece(pos, white) {};
+    PieceType Type() override {
+        return QUEEN;
+    }
+    bool CanMove(Position to, ChessBoard *board) override {
+        bool diagonal = abs(to.x - position.x) == abs(to.y - position.y);
+        bool left_right = to.y - position.y == 0;
+        bool up_down = to.x - position.x == 0;
+        if (diagonal || left_right || up_down) {
+            return true;
+        }
+        return false;
+    }
+};
+
+class King : public ChessPiece {
+public:
+    King(Position pos, bool white) : ChessPiece(pos, white) {};
+    PieceType Type() override {
+        return KING;
+    }
+    bool CanMove(Position to,  ChessBoard *board) override {
+        int p_x = abs(to.x - position.x);
+        int p_y = abs(to.y - position.y);
+        bool diagonal = (p_x == p_y) && (p_x == 1) && (p_y == 1);
+        bool left_right = (p_y == 0) && (p_x == 1);
+        bool up_down = (p_x == 0) && (p_y == 1);
+        if (diagonal || left_right || up_down) {
+            return true;
+        }
+        return false;
+    }
+private:
+    bool hadCastle = false;
+};
+
+class Bishop : public ChessPiece {
+public:
+    Bishop(Position pos, bool white) : ChessPiece(pos, white) {};
+    PieceType Type() override {
+        return BISHOP;
+    }
+    bool CanMove(Position to,  ChessBoard *board) override {
+        bool diagonal = abs(to.x - position.x) == abs(to.y - position.y);
+        if (diagonal) {
+            return true;
+        }
+        return false;
+    }
+};
+
+class Knight : public ChessPiece {
+    Knight(Position pos, bool white) : ChessPiece(pos, white) {};
+    PieceType Type() override {
+        return KNIGHT;
+    }
+    bool CanMove(Position to, ChessBoard *board) override {
+        int p_x = abs(to.x - position.x);
+        int p_y = abs(to.y - position.y);
+        bool first_move = p_x == 1 && p_y == 2;
+        bool second_move = p_x == 2 && p_y == 1;
+        if (first_move || second_move) {
+            return true;
+        }
+        return false;
+    } //подив чи працює
+};
+
+class Pawn : public ChessPiece {
+public:
+    Pawn(Position pos, bool white, bool isFirstMove) : ChessPiece(pos, white), isFirstMove(isFirstMove) {};
+    PieceType Type() override {
+        return PAWN;
+    }
+    bool CanMove(Position to,  ChessBoard *board) override {
+        int p_x = abs(to.x - position.x);
+        int p_y = abs(to.y - position.y);
+        if (isFirstMove) {
+            if ((p_y == 2 || p_y == 1) && (p_x == 0)) {
+                return true;
+            }
+        } else {
+            if (p_y == 1 && p_x == 0) {
+                return true;
+            }
+        }
+        return false;
+    }
+//    bool CanTake(Position to) override {
+//        int p_x = to.x - position.x;
+//        int p_y = to.y - position.y;
+//        if (p_x == 1 && p_y == 1) {
+//            return true;
+//        }
+//        return false;
+//    }
+private:
+    bool isFirstMove = true;
+};
+
+
 using ChessPiecePtr = shared_ptr<ChessPiece>;
 
 class ChessBoard {
@@ -176,12 +280,12 @@ public:
     void Draw() {
         cout << '\n';
         for (int i = 0; i < getCols(); i++) {
-            cout << ' ' << i + 1 << "  ";
+            cout << ' ' << i << "  ";
         }
-        cout << '\n';
-        for (int i = 0; i < getCols(); i++) {
-            cout << " ___";
-        }
+//        cout << '\n';
+//        for (int i = 0; i < getCols(); i++) {
+//            cout << " ___";
+//        }
         cout << '\n';
         for (int i = 0; i < getRows(); i++) {
             for (int j = 0; j < getCols(); j++) {
@@ -197,7 +301,7 @@ public:
                     cout << "|___";
                 }
             }
-            cout << '|' << ' ' << i + 1 << '\n';
+            cout << '|' << ' ' << i << '\n';
         }
         cout << "======================================================\n";
     }
@@ -218,12 +322,12 @@ int main() {
 
     auto BlackQueen = std::make_shared<Queen>(Position(0, 1), false);
     board.AddPiece(BlackQueen);
+    board.Draw();
 
     board.Move(BlackQueen, Position(0, 3));
     board.Draw();
-    auto bishop = std::make_shared<Bishop>(Position(1, 3), false);
+    auto bishop = std::make_shared<Bishop>(Position(1, 1), false);
     board.AddPiece(bishop);
-    board.Move(bishop, Position(0, 2));
     board.Draw();
     board.Move(bishop, Position(0, 2));
     board.Draw();
